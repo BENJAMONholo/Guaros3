@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecosistema Guaro's & Guara's</title>
+    
+    <!-- Tailwind CSS y Phosphor Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; background-color: #000; transition: background-color 0.5s ease; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(150, 150, 150, 0.3); border-radius: 10px; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .selection-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .selection-card:hover { transform: translateY(-2px); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-fade-out { opacity: 0; visibility: hidden; transition: opacity 0.5s, visibility 0.5s; }
+
+        #toast { transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        #toast.show { transform: translateY(0); }
+
+        /* TEMA: BARBER */
+        body.theme-barber { background-color: #090514; color: #e9d5ff; }
+        body.theme-barber .glass-card-dark { background: linear-gradient(135deg, rgba(30, 15, 60, 0.4) 0%, rgba(15, 7, 30, 0.8) 100%); backdrop-filter: blur(25px); border: 1px solid rgba(139, 92, 246, 0.15); box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255,255,255,0.05); }
+        body.theme-barber .flatpickr-calendar { background: #150a2e !important; border: 1px solid rgba(139, 92, 246, 0.3) !important; box-shadow: 0 20px 40px rgba(0,0,0,0.8) !important; }
+        body.theme-barber .flatpickr-months .flatpickr-month { color: #d8b4fe !important; }
+        body.theme-barber .flatpickr-day { color: #e9d5ff !important; }
+        body.theme-barber .flatpickr-day.selected { background: #8b5cf6 !important; border-color: #8b5cf6 !important; }
+
+        /* TEMA: STUDIO (Blush & Nude Light) */
+        body.theme-studio { background-color: #fff1f2; color: #4c0519; }
+        body.theme-studio .glass-card-dark { 
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(254, 205, 211, 0.8); 
+            box-shadow: 0 25px 50px -12px rgba(225, 29, 72, 0.08); 
+        }
+        body.theme-studio .flatpickr-calendar { background: #ffffff !important; border: 1px solid #ffe4e6 !important; box-shadow: 0 20px 40px rgba(225, 29, 72, 0.1) !important; }
+        body.theme-studio .flatpickr-months .flatpickr-month, body.theme-studio .flatpickr-current-month .flatpickr-monthDropdown-months { color: #be123c !important; fill: #be123c !important; }
+        body.theme-studio .flatpickr-weekday { color: #fb7185 !important; font-weight: bold; }
+        body.theme-studio .flatpickr-day { color: #4c0519 !important; }
+        body.theme-studio .flatpickr-day:hover { background: #ffe4e6 !important; }
+        body.theme-studio .flatpickr-day.selected { background: #fb7185 !important; border-color: #fb7185 !important; color: white !important; font-weight: bold !important; }
+
+        /* LANDING RESPONSIVE HOVER / CLARIDAD MÓVIL */
+        .split-overlay { transition: opacity 0.5s ease; }
+        @media (min-width: 768px) { 
+            .split-overlay { background-color: rgba(0,0,0,0.7); } 
+            .split-hover:hover .split-overlay { opacity: 0; } 
+            .split-hover:hover { flex-grow: 1.2; } 
+        }
+        @media (max-width: 767px) { 
+            .split-overlay { opacity: 0; display: none; } 
+        }
+        .ambient-glow { position: fixed; width: 600px; height: 600px; border-radius: 50%; filter: blur(140px); z-index: -1; opacity: 0.15; pointer-events: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-white">
+
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[150] bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 font-medium text-sm border border-gray-700">
+        <i id="toast-icon" class="ph-fill ph-check-circle text-xl text-emerald-400"></i>
+        <span id="toast-msg">Mensaje</span>
+    </div>
+
+    <!-- ================= LANDING SPLASH ================= -->
+    <div id="landing-splash" class="fixed inset-0 z-[100] flex flex-col md:flex-row bg-black transition-all duration-700" style="display: flex;">
+        <div class="split-hover relative flex-1 h-1/2 md:h-full cursor-pointer transition-all duration-500 overflow-hidden border-b md:border-b-0 md:border-r border-white/10" onclick="enterApp('barber')">
+            <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=2074&auto=format&fit=crop')] bg-cover bg-center"></div>
+            <div class="split-overlay absolute inset-0"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+            <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
+                <img src="/assets/logo_barber.png" alt="Logo Barber" class="w-24 h-24 object-contain mb-4 shadow-2xl rounded-3xl" onerror="this.outerHTML=`<div class='w-24 h-24 rounded-3xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white shadow-[0_0_30px_rgba(139,92,246,0.4)] mb-4'><i class='ph ph-scissors text-4xl'></i></div>`">
+                <h2 class="text-3xl font-black text-white tracking-tight mb-2 drop-shadow-lg">GUARO'S</h2>
+                <p class="text-purple-300 font-bold tracking-widest uppercase text-xs drop-shadow-md">Barbershop & Lounge</p>
+            </div>
+        </div>
+
+        <div class="split-hover relative flex-1 h-1/2 md:h-full cursor-pointer transition-all duration-500 overflow-hidden" onclick="enterApp('studio')">
+            <!-- Imagen Unsplash solicitada para Studio -->
+            <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1607779097040-26e80aa78e66?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')] bg-cover bg-center"></div>
+            <div class="split-overlay absolute inset-0"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+            <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
+                <img src="/assets/logo_studio.png" alt="Logo Studio" class="w-24 h-24 object-contain mb-4 shadow-2xl rounded-3xl" onerror="this.outerHTML=`<div class='w-24 h-24 rounded-3xl bg-white flex items-center justify-center text-rose-400 shadow-[0_0_30px_rgba(251,113,133,0.3)] mb-4 border border-rose-100'><i class='ph ph-sparkle text-4xl'></i></div>`">
+                <h2 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-100 to-white tracking-tight mb-1 drop-shadow-lg" style="font-family: cursive;">Guara's</h2>
+                <div class="flex items-center gap-2 text-rose-200 font-bold tracking-[0.3em] uppercase text-xs drop-shadow-md">
+                    <div class="w-6 h-[1px] bg-rose-200/50"></div>
+                    STUDIO
+                    <div class="w-6 h-[1px] bg-rose-200/50"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 bg-black/80 backdrop-blur-md text-white px-6 py-3 rounded-full border border-white/10 shadow-2xl font-bold tracking-widest text-xs uppercase flex items-center gap-2 pointer-events-none">
+            ¿Qué servicio <span class="text-white">escogerás</span> hoy?
+        </div>
+    </div>
+
+    <!-- ================= MÓDULO: GUARO'S BARBER ================= -->
+    <div id="app-barber" class="hidden flex-col min-h-screen">
+        <div class="ambient-glow bg-purple-600 top-[-10%] left-[-10%]"></div>
+        <div class="ambient-glow bg-indigo-700 bottom-[-10%] right-[-10%]"></div>
+
+        <div class="relative w-full h-[450px] sm:h-[500px] bg-[url('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center">
+            <div class="absolute inset-0 bg-gradient-to-b from-[#090514]/70 via-[#090514]/60 to-[#090514]"></div>
+            <header class="relative z-10 w-full px-6 py-5 flex justify-between items-center max-w-5xl mx-auto">
+                <div class="flex items-center gap-4">
+                    <img src="/assets/logo_barber.png" class="w-24 h-24 object-contain" onerror="this.outerHTML=`<div class='w-24 h-24 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white shadow-lg'><i class='ph ph-scissors text-3xl'></i></div>`">
+                    <div>
+                        <span class="font-extrabold text-xl tracking-tight text-white">GUARO'S<span class="text-purple-500"> BARBERSHOP</span></span>
+                        <span class="block text-xs tracking-widest uppercase text-purple-300/60 font-semibold">Studio & Lounge</span>
+                    </div>
+                </div>
+                <button onclick="returnToLanding()" class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-white/70 hover:text-white hover:bg-white/10 transition-all uppercase tracking-widest flex items-center gap-2 z-50 relative"><i class="ph ph-arrow-left text-lg"></i> Volver</button>
+            </header>
+            <div class="relative z-10 flex flex-col items-center justify-center h-full text-center px-4 -mt-24 sm:-mt-28 pointer-events-none">
+                <span class="px-4 py-1.5 rounded-full bg-purple-500/20 text-purple-200 text-xs font-bold tracking-widest uppercase mb-4 border border-purple-500/30 backdrop-blur-md">Agenda Online 24/7</span>
+                <h1 class="text-4xl sm:text-5xl font-black text-white tracking-tight mb-4 drop-shadow-xl">La Excelencia en <br class="sm:hidden"><span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">Cada Detalle</span></h1>
+            </div>
+        </div>
+
+        <main id="barber-client-view" class="flex-1 flex flex-col items-center p-4 w-full max-w-xl mx-auto -mt-24 sm:-mt-32 relative z-20 animate-fade-in mb-12">
+            <div class="glass-card-dark w-full rounded-[2rem] p-6 sm:p-8 shadow-2xl relative">
+                <div class="mb-8">
+                    <label class="block text-xs font-bold uppercase tracking-widest text-purple-300/60 mb-4">1. Selecciona el Servicio</label>
+                    <div class="max-h-[380px] overflow-y-auto pr-2 space-y-6 rounded-xl custom-scrollbar" id="barber-services-container"></div>
+                </div>
+                <div class="mb-8">
+                    <label class="block text-xs font-bold uppercase tracking-widest text-purple-300/60 mb-4">2. Elige tu Barbero</label>
+                    <div class="grid grid-cols-2 gap-3" id="barber-staff-container">
+                        <div class="selection-card barber-staff-card active cursor-pointer p-4 rounded-2xl border border-purple-500 bg-purple-500/20 flex flex-col items-center text-center gap-3" onclick="b_selectBarber(this, 'Alex')">
+                            <img src="https://images.unsplash.com/photo-1717700921740-a1440f3b89a4?q=80&w=687&auto=format&fit=crop" class="w-14 h-14 rounded-full object-cover shadow-[0_0_15px_rgba(139,92,246,0.5)] border-2 border-purple-500 transition-all" alt="Alex">
+                            <h4 class="font-bold text-sm text-white">Alex Studio</h4>
+                        </div>
+                        <div class="selection-card barber-staff-card cursor-pointer p-4 rounded-2xl border border-purple-500/10 bg-purple-500/5 flex flex-col items-center text-center gap-3 transition-all hover:border-purple-500/30" onclick="b_selectBarber(this, 'David')">
+                            <img src="https://images.unsplash.com/photo-1569683236049-bc137196a02a?q=80&w=687&auto=format&fit=crop" class="w-14 h-14 rounded-full object-cover border-2 border-transparent transition-all" alt="David">
+                            <h4 class="font-bold text-sm text-purple-200">David Fade</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-8">
+                    <label class="block text-xs font-bold uppercase tracking-widest text-purple-300/60 mb-4">3. Fecha y Bloque Horario</label>
+                    <div class="relative mb-4">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-purple-400 z-10 pointer-events-none"><i class="ph ph-calendar"></i></span>
+                        <input type="text" id="barber-book-date" placeholder="Selecciona una fecha..." class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-purple-900/10 border border-purple-500/20 focus:outline-none focus:border-purple-500 font-semibold text-purple-100 shadow-inner text-sm">
+                    </div>
+                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-2" id="barber-times-container">
+                        <button class="b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-200/70 text-xs font-bold hover:border-purple-500 hover:text-purple-300" onclick="b_selectTime(this, '10:00')">10:00</button>
+                        <button class="b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-200/70 text-xs font-bold hover:border-purple-500 hover:text-purple-300" onclick="b_selectTime(this, '11:00')">11:00</button>
+                        <button class="b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-200/70 text-xs font-bold hover:border-purple-500 hover:text-purple-300" onclick="b_selectTime(this, '12:00')">12:00</button>
+                        <button class="b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-200/70 text-xs font-bold hover:border-purple-500 hover:text-purple-300" onclick="b_selectTime(this, '13:00')">13:00</button>
+                        <button class="b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-200/70 text-xs font-bold hover:border-purple-500 hover:text-purple-300" onclick="b_selectTime(this, '14:00')">14:00</button>
+                        <button class="b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-200/70 text-xs font-bold hover:border-purple-500 hover:text-purple-300" onclick="b_selectTime(this, '15:00')">15:00</button>
+                        <button class="b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-200/70 text-xs font-bold hover:border-purple-500 hover:text-purple-300" onclick="b_selectTime(this, '16:00')">16:00</button>
+                        <button class="b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-200/70 text-xs font-bold hover:border-purple-500 hover:text-purple-300" onclick="b_selectTime(this, '17:00')">17:00</button>
+                        <button class="b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-200/70 text-xs font-bold hover:border-purple-500 hover:text-purple-300" onclick="b_selectTime(this, '18:00')">18:00</button>
+                        <button class="b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-200/70 text-xs font-bold hover:border-purple-500 hover:text-purple-300" onclick="b_selectTime(this, '19:00')">19:00</button>
+                        <button class="b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-200/70 text-xs font-bold hover:border-purple-500 hover:text-purple-300" onclick="b_selectTime(this, '20:00')">20:00</button>
+                    </div>
+                </div>
+                <div class="mb-8 space-y-4">
+                    <label class="block text-xs font-bold uppercase tracking-widest text-purple-300/60 mb-2">4. Tus Datos de Contacto</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-purple-400"><i class="ph ph-user-circle"></i></span>
+                        <input type="text" id="barber-client-name" placeholder="Tu Nombre" class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-purple-900/10 border border-purple-500/20 font-medium text-purple-100 placeholder-purple-300/40 text-sm">
+                    </div>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-emerald-400"><i class="ph ph-whatsapp-logo"></i></span>
+                        <input type="tel" id="barber-client-phone" placeholder="WhatsApp (+569...)" class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-purple-900/10 border border-purple-500/20 font-medium text-purple-100 placeholder-purple-300/40 text-sm">
+                    </div>
+                </div>
+                <button onclick="b_confirmBooking()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-sm hover:opacity-95 active:scale-[0.98] transition-all shadow-[0_0_25px_rgba(139,92,246,0.4)] flex items-center justify-center gap-2 tracking-wide uppercase border border-purple-400/50">
+                    <i class="ph ph-calendar-check text-xl"></i> Confirmar y Agendar
+                </button>
+            </div>
+            <div class="mt-8 text-center">
+                <button onclick="showAdminModal('barber')" class="opacity-40 hover:opacity-100 transition-opacity text-xs inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-200">
+                    <i class="ph ph-lock-key"></i> Acceso Barberos
+                </button>
+            </div>
+        </main>
+        
+        <div id="barber-admin-view" class="fixed inset-0 z-50 bg-[#090514] text-purple-100 flex-col md:flex-row overflow-hidden animate-fade-in" style="display: none;">
+            <div class="w-full md:w-20 bg-[#120a26] border-b md:border-b-0 md:border-r border-purple-500/10 flex md:flex-col items-center justify-between py-4 md:py-8 px-6 md:px-0">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.6)]">
+                    <i class="ph ph-scissors text-2xl text-white"></i>
+                </div>
+                <div class="md:mt-auto">
+                    <button onclick="logoutAdmin('barber')" class="p-3 rounded-2xl hover:bg-red-500/10 text-red-400/80 hover:text-red-400 transition-colors border border-transparent hover:border-red-500/30" title="Cerrar Sesión">
+                        <i class="ph ph-sign-out text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 flex flex-col p-6 md:p-10 overflow-y-auto bg-gradient-to-br from-[#090514] via-[#0d071c] to-[#160b2e]">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                    <div><h1 class="text-3xl font-extrabold tracking-tight text-white">Dashboard General ⚡</h1></div>
+                    <button onclick="b_renderTimeline()" class="px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/40 text-purple-200 text-xs font-bold transition-all border border-purple-500/30 flex items-center gap-1.5"><i class="ph ph-arrows-clockwise"></i> Actualizar</button>
+                </div>
+                <div class="mb-6"><div class="flex gap-3 overflow-x-auto pb-4 hide-scrollbar" id="barber-calendar-slider"></div></div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
+                    <div class="glass-card-dark rounded-3xl p-6 flex flex-col">
+                        <div class="flex items-center gap-3 mb-6 border-b border-purple-500/10 pb-4">
+                            <img src="https://images.unsplash.com/photo-1717700921740-a1440f3b89a4?q=80&w=687&auto=format&fit=crop" class="w-10 h-10 rounded-full object-cover">
+                            <h3 class="text-xl font-bold text-purple-100">Agenda <span class="text-purple-400">Alex</span></h3>
+                        </div>
+                        <div class="flex-1 overflow-y-auto pr-2 space-y-4 hide-scrollbar" id="b-timeline-alex"></div>
+                    </div>
+                    <div class="glass-card-dark rounded-3xl p-6 flex flex-col">
+                        <div class="flex items-center gap-3 mb-6 border-b border-purple-500/10 pb-4">
+                            <img src="https://images.unsplash.com/photo-1569683236049-bc137196a02a?q=80&w=687&auto=format&fit=crop" class="w-10 h-10 rounded-full object-cover">
+                            <h3 class="text-xl font-bold text-purple-100">Agenda <span class="text-blue-400">David</span></h3>
+                        </div>
+                        <div class="flex-1 overflow-y-auto pr-2 space-y-4 hide-scrollbar" id="b-timeline-david"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MÓDULO: GUARA'S STUDIO ================= -->
+    <div id="app-studio" class="hidden flex-col min-h-screen" style="display: none;">
+        <div class="ambient-glow studio-glow-1 top-[-10%] left-[-10%]"></div>
+        <div class="ambient-glow studio-glow-2 bottom-[-10%] right-[-10%]"></div>
+
+        <div class="relative w-full h-[450px] sm:h-[500px] bg-[url('https://images.unsplash.com/photo-1607779097040-26e80aa78e66?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')] bg-cover bg-center">
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#fff1f2]"></div>
+            <header class="relative z-10 w-full px-6 py-5 flex justify-between items-center max-w-5xl mx-auto">
+                <div class="flex items-center gap-4">
+                    <img src="/assets/logo_studio.png" class="w-24 h-24 object-contain" onerror="this.outerHTML=`<div class='w-24 h-24 rounded-2xl bg-white flex items-center justify-center text-rose-400 shadow-sm border border-rose-200'><i class='ph ph-sparkle text-3xl'></i></div>`">
+                    <div>
+                        <span class="font-extrabold text-xl tracking-tight text-rose-900" style="font-family: cursive;">Guara's</span>
+                        <span class="block text-xs tracking-[0.2em] uppercase text-rose-500 font-semibold mt-0.5">Studio VIP</span>
+                    </div>
+                </div>
+                <button onclick="returnToLanding()" class="px-4 py-2 rounded-xl bg-white border border-rose-200 text-xs font-bold text-rose-700 hover:bg-rose-50 transition-all uppercase tracking-widest flex items-center gap-2 z-50 relative shadow-sm"><i class="ph ph-arrow-left text-lg"></i> Volver</button>
+            </header>
+            <div class="relative z-10 flex flex-col items-center justify-center h-full text-center px-4 -mt-24 sm:-mt-28 pointer-events-none">
+                <span class="px-4 py-1.5 rounded-full bg-white/90 text-rose-500 text-xs font-bold tracking-widest uppercase mb-4 border border-rose-200 backdrop-blur-md flex items-center gap-2 shadow-sm"><i class="ph-fill ph-crown text-rose-400"></i> Reserva Exclusiva</span>
+                <h1 class="text-4xl sm:text-5xl font-black text-gray-800 tracking-tight mb-4 drop-shadow-md">El Cuidado que <br class="sm:hidden"><span class="text-rose-500">Tus Manos Merecen</span></h1>
+            </div>
+        </div>
+
+        <main id="studio-client-view" class="flex-1 flex flex-col items-center p-4 w-full max-w-xl mx-auto -mt-24 sm:-mt-32 relative z-20 animate-fade-in mb-12">
+            <div class="glass-card-dark w-full rounded-[2rem] p-6 sm:p-8 relative">
+                <div class="mb-8">
+                    <label class="block text-xs font-bold uppercase tracking-widest text-rose-700 mb-4">1. Tratamientos & Spa</label>
+                    <div class="max-h-[380px] overflow-y-auto pr-2 space-y-6 rounded-xl custom-scrollbar" id="studio-services-container"></div>
+                </div>
+                <div class="mb-8">
+                    <label class="block text-xs font-bold uppercase tracking-widest text-rose-700 mb-4">2. Elige tu Especialista</label>
+                    <div class="grid grid-cols-2 gap-3" id="studio-staff-container">
+                        <div class="selection-card studio-staff-card active cursor-pointer p-4 rounded-2xl border border-rose-400 bg-rose-50 flex flex-col items-center text-center gap-3 shadow-md" onclick="s_selectBarber(this, 'Camila')">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=764&auto=format&fit=crop" class="w-14 h-14 rounded-full object-cover shadow-[0_0_15px_rgba(251,113,133,0.3)] border-2 border-rose-400 transition-all" alt="Camila">
+                            <h4 class="font-bold text-sm text-rose-700">Camila Nails</h4>
+                        </div>
+                        <div class="selection-card studio-staff-card cursor-pointer p-4 rounded-2xl border border-rose-100 bg-white flex flex-col items-center text-center gap-3 transition-all hover:border-rose-300 shadow-sm" onclick="s_selectBarber(this, 'Valentina')">
+                            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=150&auto=format&fit=crop" class="w-14 h-14 rounded-full object-cover border-2 border-transparent transition-all" alt="Valentina">
+                            <h4 class="font-bold text-sm text-gray-800">Valentina Studio</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-8">
+                    <label class="block text-xs font-bold uppercase tracking-widest text-rose-700 mb-4">3. Fecha y Bloque Horario</label>
+                    <div class="relative mb-4">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-rose-400 z-10 pointer-events-none"><i class="ph ph-calendar-heart"></i></span>
+                        <input type="text" id="studio-book-date" placeholder="Selecciona una fecha..." class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white border border-rose-200 focus:outline-none focus:border-rose-400 font-semibold text-gray-800 shadow-sm text-sm transition-colors">
+                    </div>
+                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-2" id="studio-times-container">
+                        <button class="s-time-btn py-2.5 rounded-xl border border-rose-200 bg-white text-gray-600 text-xs font-bold hover:border-rose-400 hover:text-rose-500 shadow-sm" onclick="s_selectTime(this, '10:00')">10:00</button>
+                        <button class="s-time-btn py-2.5 rounded-xl border border-rose-200 bg-white text-gray-600 text-xs font-bold hover:border-rose-400 hover:text-rose-500 shadow-sm" onclick="s_selectTime(this, '11:30')">11:30</button>
+                        <button class="s-time-btn py-2.5 rounded-xl border border-rose-200 bg-white text-gray-600 text-xs font-bold hover:border-rose-400 hover:text-rose-500 shadow-sm" onclick="s_selectTime(this, '13:00')">13:00</button>
+                        <button class="s-time-btn py-2.5 rounded-xl border border-rose-200 bg-white text-gray-600 text-xs font-bold hover:border-rose-400 hover:text-rose-500 shadow-sm" onclick="s_selectTime(this, '14:30')">14:30</button>
+                        <button class="s-time-btn py-2.5 rounded-xl border border-rose-200 bg-white text-gray-600 text-xs font-bold hover:border-rose-400 hover:text-rose-500 shadow-sm" onclick="s_selectTime(this, '16:00')">16:00</button>
+                        <button class="s-time-btn py-2.5 rounded-xl border border-rose-200 bg-white text-gray-600 text-xs font-bold hover:border-rose-400 hover:text-rose-500 shadow-sm" onclick="s_selectTime(this, '17:30')">17:30</button>
+                        <button class="s-time-btn py-2.5 rounded-xl border border-rose-200 bg-white text-gray-600 text-xs font-bold hover:border-rose-400 hover:text-rose-500 shadow-sm" onclick="s_selectTime(this, '19:00')">19:00</button>
+                    </div>
+                </div>
+                <div class="mb-8 space-y-4">
+                    <label class="block text-xs font-bold uppercase tracking-widest text-rose-700 mb-2">4. Tus Datos de Contacto</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-rose-400"><i class="ph ph-user-circle"></i></span>
+                        <input type="text" id="studio-client-name" placeholder="Tu Nombre" class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white border border-rose-200 font-medium text-gray-800 placeholder-gray-400 text-sm focus:border-rose-400 focus:outline-none transition-colors shadow-sm">
+                    </div>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-emerald-500"><i class="ph ph-whatsapp-logo"></i></span>
+                        <input type="tel" id="studio-client-phone" placeholder="WhatsApp (+569...)" class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white border border-rose-200 font-medium text-gray-800 placeholder-gray-400 text-sm focus:border-rose-400 focus:outline-none transition-colors shadow-sm">
+                    </div>
+                </div>
+                <button onclick="s_confirmBooking()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-400 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-extrabold text-sm active:scale-[0.98] transition-all shadow-[0_10px_20px_rgba(225,29,72,0.2)] flex items-center justify-center gap-2 tracking-wide uppercase">
+                    <i class="ph ph-calendar-check text-xl"></i> Confirmar Reserva VIP
+                </button>
+            </div>
+            <div class="mt-8 text-center">
+                <button onclick="showAdminModal('studio')" class="opacity-70 hover:opacity-100 transition-opacity text-xs inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-rose-200 text-rose-700 shadow-sm">
+                    <i class="ph ph-lock-key"></i> Acceso Studio
+                </button>
+            </div>
+        </main>
+
+        <div id="studio-admin-view" class="fixed inset-0 z-50 bg-[#fff1f2] text-gray-800 flex-col md:flex-row overflow-hidden animate-fade-in" style="display: none;">
+            <div class="w-full md:w-20 bg-white border-b md:border-b-0 md:border-r border-rose-100 flex md:flex-col items-center justify-between py-4 md:py-8 px-6 md:px-0 shadow-sm">
+                <div class="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center shadow-sm">
+                    <i class="ph ph-sparkle text-2xl text-rose-500"></i>
+                </div>
+                <div class="md:mt-auto">
+                    <button onclick="logoutAdmin('studio')" class="p-3 rounded-2xl hover:bg-rose-100 text-rose-400 hover:text-rose-600 transition-colors border border-transparent hover:border-rose-200" title="Cerrar Sesión">
+                        <i class="ph ph-sign-out text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 flex flex-col p-6 md:p-10 overflow-y-auto bg-[#fff1f2]">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                    <div><h1 class="text-3xl font-extrabold tracking-tight text-gray-800 flex items-center gap-2"><i class="ph-fill ph-crown text-rose-400"></i> Dashboard Studio</h1></div>
+                    <button onclick="s_renderTimeline()" class="px-4 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 text-xs font-bold transition-all border border-rose-200 flex items-center gap-1.5 shadow-sm"><i class="ph ph-arrows-clockwise"></i> Actualizar</button>
+                </div>
+                <div class="mb-6"><div class="flex gap-3 overflow-x-auto pb-4 hide-scrollbar" id="studio-calendar-slider"></div></div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
+                    <div class="bg-white rounded-3xl p-6 flex flex-col border border-rose-100 shadow-sm">
+                        <div class="flex items-center gap-3 mb-6 border-b border-rose-100 pb-4">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=764&auto=format&fit=crop" class="w-10 h-10 rounded-full object-cover shadow-sm border border-rose-200">
+                            <h3 class="text-xl font-bold text-gray-800">Agenda <span class="text-rose-500">Camila</span></h3>
+                        </div>
+                        <div class="flex-1 overflow-y-auto pr-2 space-y-4 hide-scrollbar" id="s-timeline-camila"></div>
+                    </div>
+                    <div class="bg-white rounded-3xl p-6 flex flex-col border border-rose-100 shadow-sm">
+                        <div class="flex items-center gap-3 mb-6 border-b border-rose-100 pb-4">
+                            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=150&auto=format&fit=crop" class="w-10 h-10 rounded-full object-cover border border-rose-200">
+                            <h3 class="text-xl font-bold text-gray-800">Agenda <span class="text-rose-400">Valentina</span></h3>
+                        </div>
+                        <div class="flex-1 overflow-y-auto pr-2 space-y-4 hide-scrollbar" id="s-timeline-valentina"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL LOGIN ================= -->
+    <div id="login-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4 animate-fade-in">
+        <div id="login-card" class="p-8 rounded-3xl w-full max-w-sm relative shadow-2xl">
+            <button onclick="hideAdminModal()" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center opacity-70 hover:opacity-100"><i class="ph ph-x text-white"></i></button>
+            <div id="login-icon" class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-4"><i class="ph ph-shield-check"></i></div>
+            <h2 class="text-2xl font-bold mb-1" id="login-title">Acceso</h2>
+            <p class="text-xs mb-6 opacity-60" id="login-subtitle">Ingresa tu PIN (Demo: 1234)</p>
+            <input type="password" id="pin-input" placeholder="••••" maxlength="4" class="w-full p-4 rounded-2xl focus:outline-none text-center text-3xl tracking-[0.7em] font-mono mb-6 border transition-colors">
+            <button onclick="attemptLogin()" id="login-btn" class="w-full py-3.5 rounded-2xl font-bold transition-all shadow-lg">Iniciar Sesión</button>
+        </div>
+    </div>
+
+    <!-- ================= SCRIPT LOGICA ================= -->
+    <script>
+        const API_URL = '/api'; 
+        let activeApp = null; 
+        let pendingLogin = null;
+
+        const barberServicesHTML = `
+            <div>
+                <h4 class="text-[10px] font-bold text-purple-400/50 uppercase tracking-widest mb-3 ml-1">Servicios Base</h4>
+                <div class="selection-card b-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2" data-name="Corte de Cabello" data-category="base" onclick="b_selectBase('Corte de Cabello', 'normal')">
+                    <div><h3 class="font-bold text-sm text-purple-50">Corte de Cabello</h3><span class="text-[10px] text-purple-300/50">1 hora</span></div><span class="price-tag font-extrabold text-sm">$11.000</span>
+                </div>
+                <div class="selection-card b-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2" data-name="Corte de Niño" data-category="base" onclick="b_selectBase('Corte de Niño', 'child')">
+                    <div><h3 class="font-bold text-sm text-purple-50">Corte de Niño</h3><span class="text-[10px] text-purple-300/50">1 hora</span></div><span class="price-tag font-extrabold text-sm">$11.000</span>
+                </div>
+                <div class="selection-card b-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2" data-name="Corte a Navaja" data-category="base" onclick="b_selectBase('Corte a Navaja', 'normal')">
+                    <div><h3 class="font-bold text-sm text-purple-50">Corte a Navaja</h3><span class="text-[10px] text-purple-300/50">1 hora</span></div><span class="price-tag font-extrabold text-sm">$13.000</span>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-[10px] font-bold text-purple-400/50 uppercase tracking-widest mb-3 ml-1 mt-6">Servicios Adicionales</h4>
+                <div class="selection-card b-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2" data-name="Perfilado de Barba" data-category="addon" onclick="b_toggleAddon('Perfilado de Barba')">
+                    <div><h3 class="font-bold text-sm text-purple-50">Perfilado de Barba</h3><span class="text-[10px] text-purple-300/50">15 min</span></div><span class="price-tag font-extrabold text-sm">$7.000</span>
+                </div>
+                <div class="selection-card b-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2" data-name="Perfilado de Cejas" data-category="addon" onclick="b_toggleAddon('Perfilado de Cejas')">
+                    <div><h3 class="font-bold text-sm text-purple-50">Perfilado de Cejas</h3><span class="text-[10px] text-purple-300/50">15 min</span></div><span class="price-tag font-extrabold text-sm">$4.000</span>
+                </div>
+                <div class="selection-card b-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2" data-name="Línea en la ceja ó comillas" data-category="addon" onclick="b_toggleAddon('Línea en la ceja ó comillas')">
+                    <div><h3 class="font-bold text-sm text-purple-50">Línea en la ceja ó comillas</h3><span class="text-[10px] text-purple-300/50">15 min</span></div><span class="price-tag font-extrabold text-sm">$2.000</span>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3 ml-1 mt-6 flex items-center gap-1"><i class="ph ph-crown text-lg"></i> Promociones</h4>
+                <div class="selection-card b-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2" data-name="Corte + Perfilado de Cejas" data-category="premium" onclick="b_selectBase('Corte + Perfilado de Cejas', 'premium')">
+                    <div><h3 class="font-bold text-sm text-purple-50">Corte + Perfilado de Cejas</h3><span class="text-[10px] text-emerald-400/70">1h 15m</span></div><span class="price-tag font-extrabold text-sm">$13.000</span>
+                </div>
+                <div class="selection-card b-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2" data-name="Corte + Perfilado de Barba" data-category="premium" onclick="b_selectBase('Corte + Perfilado de Barba', 'premium')">
+                    <div><h3 class="font-bold text-sm text-purple-50">Corte + Perfilado de Barba</h3><span class="text-[10px] text-emerald-400/70">1h 15m</span></div><span class="price-tag font-extrabold text-sm">$16.000</span>
+                </div>
+                <div class="selection-card b-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2" data-name="Corte + Perf.de Barba + Perf. de cejas" data-category="premium" onclick="b_selectBase('Corte + Perf.de Barba + Perf. de cejas', 'premium')">
+                    <div><h3 class="font-bold text-sm text-purple-50">Corte + Barba + Cejas</h3><span class="text-[10px] text-emerald-400/70">1h 30m</span></div><span class="price-tag font-extrabold text-sm">$18.000</span>
+                </div>
+            </div>
+        `;
+
+        const studioServicesHTML = `
+            <div>
+                <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Servicios Base</h4>
+                <div class="selection-card s-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2" data-name="Manicure Permanente" data-category="base" onclick="s_selectBase('Manicure Permanente', 'normal')">
+                    <div><h3 class="font-bold text-sm text-gray-800 title-text">Manicure Permanente</h3><span class="text-[10px] text-gray-500 desc-text">1 hora</span></div><span class="price-tag font-extrabold text-sm text-gray-400">$15.000</span>
+                </div>
+                <div class="selection-card s-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2" data-name="Pedicure SPA" data-category="base" onclick="s_selectBase('Pedicure SPA', 'normal')">
+                    <div><h3 class="font-bold text-sm text-gray-800 title-text">Pedicure SPA</h3><span class="text-[10px] text-gray-500 desc-text">1 hora</span></div><span class="price-tag font-extrabold text-sm text-gray-400">$18.000</span>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1 mt-6">Diseño & Adicionales</h4>
+                <div class="selection-card s-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2" data-name="Diseño Nail Art" data-category="addon" onclick="s_toggleAddon('Diseño Nail Art')">
+                    <div><h3 class="font-bold text-sm text-gray-800 title-text">Diseño Nail Art</h3><span class="text-[10px] text-gray-500 desc-text">15 min</span></div><span class="price-tag font-extrabold text-sm text-gray-400">$3.000</span>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-[10px] font-bold text-rose-400 uppercase tracking-widest mb-3 ml-1 mt-6 flex items-center gap-1"><i class="ph ph-crown text-lg"></i> Combos Premium</h4>
+                <div class="selection-card s-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2" data-name="Mani + Pedi Permanente" data-category="premium" onclick="s_selectBase('Mani + Pedi Permanente', 'premium')">
+                    <div><h3 class="font-bold text-sm text-gray-800 title-text">Mani + Pedi Permanente</h3><span class="text-[10px] text-gray-500 desc-text">2 horas</span></div><span class="price-tag font-extrabold text-sm text-gray-400">$30.000</span>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('barber-services-container').innerHTML = barberServicesHTML;
+        document.getElementById('studio-services-container').innerHTML = studioServicesHTML;
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = message;
+            toast.querySelector('i').className = type === 'success' ? 'ph-fill ph-check-circle text-xl text-emerald-400' : 'ph-fill ph-warning-circle text-xl text-red-400';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 4000);
+        }
+
+        function enterApp(appName) {
+            activeApp = appName;
+            const splash = document.getElementById('landing-splash');
+            splash.classList.add('animate-fade-out');
+            setTimeout(() => {
+                splash.style.display = 'none';
+                if (appName === 'barber') {
+                    document.body.className = "bg-[#090514] min-h-screen flex flex-col selection:bg-purple-500 selection:text-white theme-barber";
+                    document.getElementById('app-barber').style.display = 'flex';
+                    initBarber();
+                } else {
+                    document.body.className = "bg-[#fff1f2] min-h-screen flex flex-col selection:bg-rose-400 selection:text-white theme-studio";
+                    document.getElementById('app-studio').style.display = 'flex';
+                    initStudio();
+                }
+            }, 500);
+        }
+
+        function returnToLanding() {
+            activeApp = null;
+            document.body.className = "bg-[#000] min-h-screen flex flex-col text-white";
+            ['app-barber', 'app-studio', 'barber-admin-view', 'studio-admin-view'].forEach(id => { document.getElementById(id).style.display = 'none'; });
+            document.getElementById('barber-client-view').style.display = 'flex';
+            document.getElementById('studio-client-view').style.display = 'flex';
+            const landing = document.getElementById('landing-splash');
+            landing.classList.remove('animate-fade-out');
+            landing.style.display = 'flex';
+        }
+
+        setInterval(() => {
+            if(activeApp === 'barber' && b_state.barber) b_cargarHoras();
+            if(activeApp === 'studio' && s_state.barber) s_cargarHoras();
+        }, 10000);
+
+        let b_state = { base: {name: "Corte de Cabello", type: "normal"}, addons: [], finalName: "Corte de Cabello", barber: "Alex", time: "" };
+
+        function initBarber() {
+            if(!document.querySelector("#barber-book-date")._flatpickr) {
+                flatpickr("#barber-book-date", { locale: "es", defaultDate: "today", minDate: "today", dateFormat: "Y-m-d", altInput: true, altFormat: "j \\de F, Y", disableMobile: true, onChange: function() { b_cargarHoras(); } });
+            }
+            b_updateUI(); b_cargarHoras();
+        }
+
+        function b_selectBase(name, type) { b_state.base = {name, type}; if(type !== 'normal') b_state.addons = []; b_updateUI(); }
+        function b_toggleAddon(name) {
+            if(b_state.base.type !== 'normal') { showToast("Los extras no aplican en Niños ni en Promociones", "error"); return; }
+            const idx = b_state.addons.indexOf(name);
+            if(idx > -1) b_state.addons.splice(idx, 1); else b_state.addons.push(name);
+            b_updateUI();
+        }
+
+        function b_updateUI() {
+            document.querySelectorAll('.b-service-card').forEach(card => {
+                const name = card.dataset.name, cat = card.dataset.category;
+                card.className = "selection-card b-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2";
+                const pTag = card.querySelector('.price-tag'); pTag.className = "price-tag font-extrabold text-sm";
+                let sel = (cat==='base'||cat==='premium') ? (b_state.base.name === name) : b_state.addons.includes(name);
+                if(sel) {
+                    if(cat==='premium') { card.classList.add('border-emerald-500', 'bg-emerald-500/10'); pTag.classList.add('text-emerald-400'); } 
+                    else { card.classList.add('border-purple-500', 'bg-purple-500/20'); pTag.classList.add('text-purple-400'); }
+                } else {
+                    card.classList.add('border-purple-500/10', 'bg-purple-500/5'); pTag.classList.add('text-purple-300/50');
+                    if(cat==='addon' && b_state.base.type !== 'normal') card.classList.add('opacity-50');
+                }
+            });
+            b_state.finalName = b_state.base.name + (b_state.addons.length ? " + " + b_state.addons.map(a=>a.split(' ')[0]).join('+') : "");
+        }
+
+        function b_selectBarber(el, name) {
+            document.querySelectorAll('.barber-staff-card').forEach(c => {
+                c.className = "selection-card barber-staff-card cursor-pointer p-4 rounded-2xl border border-purple-500/10 bg-purple-500/5 flex flex-col items-center text-center gap-3 transition-all hover:border-purple-500/30";
+                const img = c.querySelector('img'); if(img) img.className = "w-14 h-14 rounded-full object-cover border-2 border-transparent transition-all";
+            });
+            el.className = "selection-card barber-staff-card active cursor-pointer p-4 rounded-2xl border border-purple-500 bg-purple-500/20 flex flex-col items-center text-center gap-3";
+            const elImg = el.querySelector('img'); if(elImg) elImg.className = "w-14 h-14 rounded-full object-cover shadow-[0_0_15px_rgba(139,92,246,0.5)] border-2 border-purple-500 transition-all";
+            b_state.barber = name; b_cargarHoras();
+        }
+
+        function b_selectTime(el, time) {
+            if(el.disabled) return;
+            document.querySelectorAll('.b-time-btn').forEach(b => { if(!b.disabled) b.className = "b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-200/70 text-xs font-bold hover:border-purple-500 hover:text-purple-300"; });
+            el.className = "b-time-btn py-2.5 rounded-xl border border-purple-500 bg-purple-500 text-white shadow-[0_0_15px_rgba(139,92,246,0.4)] text-xs font-bold";
+            b_state.time = time;
+        }
+
+        async function b_cargarHoras() {
+            const f = document.getElementById('barber-book-date').value; if(!f) return;
+            const isSunday = new Date(f.split('-')[0], f.split('-')[1]-1, f.split('-')[2]).getDay() === 0;
+            try {
+                const res = await fetch(`${API_URL}/disponibilidad?fecha=${f}&barbero=${b_state.barber}`);
+                const data = await res.json();
+                document.querySelectorAll('.b-time-btn').forEach(b => {
+                    const t = b.innerText; const isSelected = b_state.time === t;
+                    b.disabled = false; b.classList.remove('hidden');
+                    if(!isSelected) { b.className = "b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-200/70 text-xs font-bold hover:border-purple-500 hover:text-purple-300"; }
+                    if(isSunday && ['16:00','17:00','18:00','19:00','20:00'].includes(t)) { b.classList.add('hidden'); return; }
+                    if((data.ocupadas||[]).includes(t)) { 
+                        b.disabled=true; b.className="b-time-btn py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/5 text-purple-400 opacity-20 cursor-not-allowed text-xs font-bold"; 
+                        if(isSelected) b_state.time = ""; 
+                    }
+                });
+            } catch(e) {}
+        }
+
+        async function b_confirmBooking() {
+            const n = document.getElementById('barber-client-name').value, p = document.getElementById('barber-client-phone').value, f = document.getElementById('barber-book-date').value;
+            if(!n||!p||!b_state.time) { showToast("Completa tus datos y hora", "error"); return; }
+            try {
+                const res = await fetch(`${API_URL}/agendar`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cliente:n, telefono:p, servicio:b_state.finalName, barbero:b_state.barber, fecha:f, hora:b_state.time}) });
+                if(res.ok) { showToast(`Cita confirmada!`); document.getElementById('barber-client-name').value=''; document.getElementById('barber-client-phone').value=''; b_cargarHoras(); } 
+                else { const err = await res.json(); showToast(err.error || "Alguien más tomó la hora", "error"); b_cargarHoras(); }
+            } catch(e) { showToast("Error de conexión", "error"); }
+        }
+
+        let s_state = { base: {name: "Manicure Permanente", type: "normal"}, addons: [], finalName: "Manicure Permanente", barber: "Camila", time: "" };
+
+        function initStudio() {
+            if(!document.querySelector("#studio-book-date")._flatpickr) {
+                flatpickr("#studio-book-date", { locale: "es", defaultDate: "today", minDate: "today", dateFormat: "Y-m-d", altInput: true, altFormat: "j \\de F, Y", disableMobile: true, onChange: function() { s_cargarHoras(); } });
+            }
+            s_updateUI(); s_cargarHoras();
+        }
+
+        function s_selectBase(name, type) { s_state.base = {name, type}; if(type !== 'normal') s_state.addons = []; s_updateUI(); }
+        function s_toggleAddon(name) {
+            if(s_state.base.type !== 'normal') { showToast("Selecciona un servicio base primero", "error"); return; }
+            const idx = s_state.addons.indexOf(name);
+            if(idx > -1) s_state.addons.splice(idx, 1); else s_state.addons.push(name);
+            s_updateUI();
+        }
+
+        function s_updateUI() {
+            document.querySelectorAll('.s-service-card').forEach(card => {
+                const name = card.dataset.name, cat = card.dataset.category;
+                card.className = "selection-card s-service-card cursor-pointer p-4 rounded-xl border transition-all mt-2 shadow-sm";
+                const pTag = card.querySelector('.price-tag'); pTag.className = "price-tag font-extrabold text-sm";
+                const titleTag = card.querySelector('.title-text');
+                let sel = (cat==='base'||cat==='premium') ? (s_state.base.name === name) : s_state.addons.includes(name);
+                if(sel) {
+                    if(cat==='premium') { card.classList.add('border-rose-500', 'bg-rose-100', 'shadow-md'); pTag.classList.add('text-rose-600'); titleTag.classList.replace('text-gray-800', 'text-rose-900'); } 
+                    else { card.classList.add('border-rose-300', 'bg-rose-50', 'shadow-sm'); pTag.classList.add('text-rose-500'); titleTag.classList.replace('text-gray-800', 'text-rose-900'); }
+                } else {
+                    card.classList.add('border-rose-100', 'bg-white'); pTag.classList.add('text-gray-400'); titleTag.classList.replace('text-rose-900', 'text-gray-800');
+                    if(cat==='addon' && s_state.base.type !== 'normal') card.classList.add('opacity-50');
+                }
+            });
+            s_state.finalName = s_state.base.name + (s_state.addons.length ? " + " + s_state.addons.map(a=>a.split(' ')[0]).join('+') : "");
+        }
+
+        function s_selectBarber(el, name) {
+            document.querySelectorAll('.studio-staff-card').forEach(c => {
+                c.className = "selection-card studio-staff-card cursor-pointer p-4 rounded-2xl border border-rose-100 bg-white shadow-sm flex flex-col items-center text-center gap-3 transition-all hover:border-rose-300";
+                const img = c.querySelector('img'); if(img) img.className = "w-14 h-14 rounded-full object-cover border-2 border-transparent transition-all";
+                const h4 = c.querySelector('h4'); if(h4) { h4.classList.remove('text-rose-700'); h4.classList.add('text-gray-800'); }
+            });
+            el.className = "selection-card studio-staff-card active cursor-pointer p-4 rounded-2xl border border-rose-400 bg-rose-50 shadow-md flex flex-col items-center text-center gap-3";
+            const elImg = el.querySelector('img'); if(elImg) elImg.className = "w-14 h-14 rounded-full object-cover shadow-[0_0_15px_rgba(251,113,133,0.3)] border-2 border-rose-400 transition-all";
+            const elH4 = el.querySelector('h4'); if(elH4) { elH4.classList.remove('text-gray-800'); elH4.classList.add('text-rose-700'); }
+            s_state.barber = name; s_cargarHoras();
+        }
+
+        function s_selectTime(el, time) {
+            if(el.disabled) return;
+            document.querySelectorAll('.s-time-btn').forEach(b => { if(!b.disabled) b.className = "s-time-btn py-2.5 rounded-xl border border-rose-200 bg-white shadow-sm text-gray-600 text-xs font-bold hover:border-rose-400 hover:text-rose-500"; });
+            el.className = "s-time-btn py-2.5 rounded-xl border border-rose-500 bg-rose-500 text-white shadow-md shadow-[rgba(225,29,72,0.3)] text-xs font-bold";
+            s_state.time = time;
+        }
+
+        async function s_cargarHoras() {
+            const f = document.getElementById('studio-book-date').value; if(!f) return;
+            const isSunday = new Date(f.split('-')[0], f.split('-')[1]-1, f.split('-')[2]).getDay() === 0;
+            try {
+                const res = await fetch(`${API_URL}/disponibilidad?fecha=${f}&barbero=${s_state.barber}`);
+                const data = await res.json();
+                document.querySelectorAll('.s-time-btn').forEach(b => {
+                    const t = b.innerText; const isSelected = s_state.time === t;
+                    b.disabled = false; b.classList.remove('hidden');
+                    if(!isSelected) { b.className = "s-time-btn py-2.5 rounded-xl border border-rose-200 bg-white shadow-sm text-gray-600 text-xs font-bold hover:border-rose-400 hover:text-rose-500"; }
+                    if(isSunday && ['16:00','17:30','19:00'].includes(t)) { b.classList.add('hidden'); return; }
+                    if((data.ocupadas||[]).includes(t)) { 
+                        b.disabled=true; b.className="s-time-btn py-2.5 rounded-xl border border-gray-100 bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed text-xs font-bold"; 
+                        if(isSelected) s_state.time = "";
+                    }
+                }); 
+            } catch(e) {}
+        }
+
+        async function s_confirmBooking() {
+            const n = document.getElementById('studio-client-name').value, p = document.getElementById('studio-client-phone').value, f = document.getElementById('studio-book-date').value;
+            if(!n||!p||!s_state.time) { showToast("Completa tus datos", "error"); return; }
+            try {
+                const res = await fetch(`${API_URL}/agendar`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cliente:n, telefono:p, servicio:s_state.finalName, barbero:s_state.barber, fecha:f, hora:s_state.time}) });
+                if(res.ok) { showToast(`Reserva confirmada!`); document.getElementById('studio-client-name').value=''; document.getElementById('studio-client-phone').value=''; s_cargarHoras(); } 
+                else { const err = await res.json(); showToast(err.error || "Alguien más tomó la hora", "error"); s_cargarHoras(); }
+            } catch(e) { showToast("Error de conexión", "error"); }
+        }
+
+        function showAdminModal(app) {
+            pendingLogin = app;
+            const modal = document.getElementById('login-modal');
+            const card = document.getElementById('login-card');
+            document.getElementById('pin-input').value = '';
+            if(app === 'barber') {
+                card.className = "p-8 rounded-3xl w-full max-w-sm relative shadow-2xl bg-[#090514] border border-purple-500/30 text-white";
+                document.getElementById('login-icon').className = "w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-4 bg-purple-500/20 text-purple-400";
+                document.getElementById('login-title').innerText = "Panel de Barberos";
+                document.getElementById('login-btn').className = "w-full py-3.5 rounded-2xl text-white font-bold transition-all shadow-lg bg-purple-600 hover:bg-purple-500";
+                document.getElementById('pin-input').className = "w-full p-4 rounded-2xl focus:outline-none text-center text-3xl tracking-[0.7em] font-mono mb-6 border bg-purple-900/25 border-purple-500/30 text-white";
+            } else {
+                card.className = "p-8 rounded-3xl w-full max-w-sm relative shadow-2xl bg-white border border-rose-200 text-gray-800";
+                document.getElementById('login-icon').className = "w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-4 bg-rose-50 text-rose-500 border border-rose-100";
+                document.getElementById('login-title').innerText = "Panel del Studio";
+                document.getElementById('login-btn').className = "w-full py-3.5 rounded-2xl text-white font-bold transition-all shadow-lg bg-rose-500 hover:bg-rose-600";
+                document.getElementById('pin-input').className = "w-full p-4 rounded-2xl focus:outline-none text-center text-3xl tracking-[0.7em] font-mono mb-6 border bg-white border-rose-200 text-gray-800";
+            }
+            modal.classList.remove('hidden');
+        }
+        
+        function hideAdminModal() { document.getElementById('login-modal').classList.add('hidden'); }
+        
+        function attemptLogin() {
+            if(document.getElementById('pin-input').value === '1234') {
+                hideAdminModal();
+                if(pendingLogin === 'barber') {
+                    document.getElementById('barber-client-view').style.display = 'none';
+                    document.getElementById('barber-admin-view').style.display = 'flex';
+                    genCal('barber');
+                } else {
+                    document.getElementById('studio-client-view').style.display = 'none';
+                    document.getElementById('studio-admin-view').style.display = 'flex';
+                    genCal('studio');
+                }
+            } else showToast("PIN incorrecto", "error");
+        }
+
+        function logoutAdmin(app) {
+            if(app === 'barber') {
+                document.getElementById('barber-admin-view').style.display = 'none';
+                document.getElementById('barber-client-view').style.display = 'flex';
+            } else {
+                document.getElementById('studio-admin-view').style.display = 'none';
+                document.getElementById('studio-client-view').style.display = 'flex';
+            }
+        }
+
+        function genCal(app) {
+            const slider = document.getElementById(app + '-calendar-slider');
+            const fechaActual = new Date(); const dias = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
+            let html = '';
+            for(let i=0; i<=14; i++) {
+                const f = new Date(fechaActual); f.setDate(fechaActual.getDate() + i);
+                const fDB = f.toISOString().split('T')[0];
+                const active = (i===0) ? (app==='barber' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-rose-500 border-rose-500 text-white') : (app==='barber' ? 'bg-purple-500/5 border-purple-500/10 text-purple-300/60' : 'bg-white border-rose-100 text-gray-500');
+                const tC = (i===0) ? 'text-white' : (app==='barber' ? 'text-purple-200' : 'text-gray-800');
+                html += `<div onclick="selAdminDay('${app}', this, '${fDB}')" class="cal-day-${app} flex flex-col items-center justify-center p-3 rounded-2xl border cursor-pointer min-w-[75px] transition-all ${active}">
+                            <span class="text-[10px] font-bold mb-1">${dias[f.getDay()]}</span><span class="text-xl font-black ${tC}">${f.getDate()}</span>
+                         </div>`;
+            }
+            slider.innerHTML = html;
+            setTimeout(() => selAdminDay(app, slider.children[0], new Date().toISOString().split('T')[0]), 50);
+        }
+
+        function selAdminDay(app, el, fDB) {
+            document.querySelectorAll(`.cal-day-${app}`).forEach(d => {
+                d.className = `cal-day-${app} flex flex-col items-center justify-center p-3 rounded-2xl border cursor-pointer min-w-[75px] transition-all ` + (app==='barber' ? 'bg-purple-500/5 border-purple-500/10 text-purple-300/60' : 'bg-white border-rose-100 text-gray-500 shadow-sm');
+                d.children[1].className = `text-xl font-black ${app==='barber' ? 'text-purple-200' : 'text-gray-800'}`;
+            });
+            el.className = `cal-day-${app} flex flex-col items-center justify-center p-3 rounded-2xl border cursor-pointer min-w-[75px] transition-all ` + (app==='barber' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-rose-500 border-rose-500 text-white shadow-md');
+            el.children[1].className = "text-xl font-black text-white";
+            if(app==='barber') { document.getElementById('barber-book-date').value = fDB; b_renderTimeline(fDB); } 
+            else { document.getElementById('studio-book-date').value = fDB; s_renderTimeline(fDB); }
+        }
+
+        async function b_renderTimeline(f = null) {
+            const fDB = f || document.getElementById('barber-book-date').value || new Date().toISOString().split('T')[0];
+            document.getElementById('b-timeline-alex').innerHTML = '<p class="text-purple-300/50 text-sm">Cargando...</p>';
+            document.getElementById('b-timeline-david').innerHTML = '<p class="text-purple-300/50 text-sm">Cargando...</p>';
+            try {
+                const res = await fetch(`${API_URL}/citas?fecha=${fDB}`); const citas = await res.json();
+                document.getElementById('b-timeline-alex').innerHTML = ''; document.getElementById('b-timeline-david').innerHTML = '';
+                citas.forEach(i => {
+                    const c = `<div class="flex items-center gap-4 p-4 rounded-2xl bg-purple-500/5 border border-purple-500/10"><div class="w-14 font-mono text-xs text-purple-400 border-r border-purple-500/10 pr-3 text-center"><span class="block font-bold text-white text-sm">${i.hora}</span></div><div class="flex-1 min-w-0"><h4 class="font-bold text-sm text-purple-100 truncate mb-0.5">${i.cliente}</h4><p class="text-[10px] text-purple-400/50 mt-1">${i.servicio}</p></div></div>`;
+                    if(i.barbero === 'Alex') { document.getElementById('b-timeline-alex').innerHTML += c; } 
+                    else if (i.barbero === 'David') { document.getElementById('b-timeline-david').innerHTML += c; }
+                });
+            } catch(e) {}
+        }
+
+        async function s_renderTimeline(f = null) {
+            const fDB = f || document.getElementById('studio-book-date').value || new Date().toISOString().split('T')[0];
+            document.getElementById('s-timeline-camila').innerHTML = '<p class="text-gray-400 text-sm">Cargando...</p>';
+            document.getElementById('s-timeline-valentina').innerHTML = '<p class="text-gray-400 text-sm">Cargando...</p>';
+            try {
+                const res = await fetch(`${API_URL}/citas?fecha=${fDB}`); const citas = await res.json();
+                document.getElementById('s-timeline-camila').innerHTML = ''; document.getElementById('s-timeline-valentina').innerHTML = '';
+                citas.forEach(i => {
+                    const c = `<div class="flex items-center gap-4 p-4 rounded-2xl bg-rose-50 border border-rose-100 hover:border-rose-300 transition-all shadow-sm"><div class="w-14 font-mono text-xs text-rose-500 border-r border-rose-200 pr-3 text-center"><span class="block font-bold text-rose-900 text-sm">${i.hora}</span></div><div class="flex-1 min-w-0"><h4 class="font-bold text-sm text-gray-800 truncate mb-0.5">${i.cliente}</h4><p class="text-[10px] text-gray-500 mt-1">${i.servicio}</p></div></div>`;
+                    if(i.barbero === 'Camila') { document.getElementById('s-timeline-camila').innerHTML += c; } 
+                    else if (i.barbero === 'Valentina') { document.getElementById('s-timeline-valentina').innerHTML += c; }
+                });
+            } catch(e) {}
+        }
+    </script>
+</body>
+</html>
