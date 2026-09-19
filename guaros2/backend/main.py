@@ -128,6 +128,14 @@ def init_db():
     conn.commit()
     conn.close()
 
+# ======= EL CAMBIO ESTÁ AQUÍ =======
+# Llamamos a la función directamente en el archivo principal 
+# para que Render cree la base de datos sí o sí.
+init_db()
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
+
 def limpiar_historial():
     hoy = datetime.now().strftime('%Y-%m-%d')
     conn = sqlite3.connect(DB_NAME)
