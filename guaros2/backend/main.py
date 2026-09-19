@@ -59,8 +59,8 @@ def enviar_alerta_staff(trabajador, cliente, telefono_cliente, servicio, fecha, 
     except Exception as e:
         print(f"Error alertando al staff: {e}")
 
-def enviar_confirmacion_cliente(telefono, cliente, servicio, fecha, hora, barbero):
-    """Envía la plantilla de la BIBLIOTECA DE META al cliente"""
+def enviar_confirmacion_cliente(telefono, cliente, servicio, fecha, hora):
+    """Envía la plantilla de prueba predeterminada de Meta para verificar la conexión"""
     url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
     numero_limpio = str(telefono).replace('+', '').replace(' ', '')
     headers = {
@@ -68,40 +68,22 @@ def enviar_confirmacion_cliente(telefono, cliente, servicio, fecha, hora, barber
         "Content-Type": "application/json"
     }
     
-    # Lógica inteligente: Define el nombre de la empresa según con quién reservó
-    if barbero in ["Camila", "Valentina"]:
-        nombre_empresa = "Guara's Studio VIP"
-    else:
-        nombre_empresa = "Guaro's Barbershop"
-    
+    # Usamos "hello_world" que no requiere variables y está siempre aprobada
     data = {
         "messaging_product": "whatsapp",
         "to": numero_limpio,
         "type": "template",
         "template": {
-            "name": "confirmacion_oficial", # <-- EXACTAMENTE EL NOMBRE QUE PUSISTE EN EL RECUADRO DE META
-            "language": { "code": "es" },   # Las plantillas de biblioteca suelen usar "es" o "es_LA"
-            "components": [
-                {
-                    "type": "body",
-                    "parameters": [
-                        {"type": "text", "text": cliente},         # {{1}} Nombre del cliente
-                        {"type": "text", "text": nombre_empresa},  # {{2}} Nombre de la empresa
-                        {"type": "text", "text": servicio},        # {{3}} Servicio
-                        {"type": "text", "text": fecha},           # {{4}} Fecha
-                        {"type": "text", "text": hora}             # {{5}} Hora
-                    ]
-                }
-            ]
+            "name": "hello_world",
+            "language": { "code": "en_US" }
         }
     }
     
     try:
         response = requests.post(url, headers=headers, json=data)
-        print(f"Respuesta enviando confirmación: {response.status_code}")
+        print(f"Respuesta enviando prueba hello_world: {response.status_code} - {response.text}")
     except Exception as e:
         print(f"Error enviando confirmación al cliente: {e}")
-
 # ==========================================
 # CONFIGURACIÓN DEL SERVIDOR FLASK
 # ==========================================
