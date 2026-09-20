@@ -8,7 +8,7 @@ from datetime import datetime
 # ==========================================
 # CONFIGURACIÓN WHATSAPP API (META)
 # ==========================================
-WHATSAPP_TOKEN = "EAAP0nIJGPpMBSvXYuCSl69eQzy42IVoBrvUP4HUWCs35sbJQuqoOHWc5PuGFSaeGsCBQbzv8S2HZB2Al7zBxe40KLkNsiQp1ZBNYB3ftUDlBHrOADXeaZBfa7EnV7cj8fV0Yjru4BTM6v4THZBEt9fAci8nMJtqBeCOM5w0z3sZBh6ZB8Ta4uLw56L6oARYUzDNoTrUngQp8fx5C3etzTR9WzAnZA6ZAQ0BCPwTXcctfKGunFAldK3gSQ4iImJvn6G4nJhumVYXyPiXF6jfMFopVIiKUp3aV5FZC9kiK19wZDZD"
+WHATSAPP_TOKEN = "EAAP0nlJGPpMBSu3B2rbybvXfjituZBIaGO0QSZBFrnZAmZCeFOf8UqIrAXnHIaJwdy0ORmzf4AbZB7ssEhCvj6WciFIikbwEdg5hBKMfwrc2Yo93u5K00Vd7SFS2NfgNqGSK9OMxGbtHge5JjP7uZAm15I3KdTVF7M1gdRAdpPaKEUa8cBZCMV2RrZAajmo0GhSU9VPcMYqXrsEGzEv1Gz6SiTfybBnh1uVAiK7mBvyaBKOGS2ZBFyMeuemJFmPyPqfTMHyDCupq2ZCw7No9Rm31LX5dwvNg8NV8EUtvYR4NBW"
 PHONE_NUMBER_ID = "1266414733229758"
 
 # Mapeo de números del personal
@@ -23,6 +23,7 @@ def enviar_alerta_staff(trabajador, cliente, telefono_cliente, servicio, fecha, 
     """Envía la plantilla pre-aprobada 'alerta_staff' al trabajador correspondiente"""
     numero_destino = STAFF_NUMBERS.get(trabajador)
     if not numero_destino:
+        print(f"No hay número registrado para el trabajador: {trabajador}")
         return
 
     url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
@@ -38,16 +39,16 @@ def enviar_alerta_staff(trabajador, cliente, telefono_cliente, servicio, fecha, 
         "type": "template",
         "template": {
             "name": "alerta_staff", 
-            "language": { "code": "es_CL" }, # Asegúrate de que coincida con lo que pusiste en Meta
+            "language": { "code": "es_CL" }, # En tu imagen dice "Spanish (CHL)" para alerta_staff
             "components": [
                 {
                     "type": "body",
                     "parameters": [
-                        {"type": "text", "text": cliente},            
-                        {"type": "text", "text": telefono_cliente},   
-                        {"type": "text", "text": servicio},           
-                        {"type": "text", "text": fecha},              
-                        {"type": "text", "text": hora}                
+                        {"type": "text", "text": cliente},            # {{1}}
+                        {"type": "text", "text": telefono_cliente},   # {{2}}
+                        {"type": "text", "text": servicio},           # {{3}}
+                        {"type": "text", "text": fecha},              # {{4}}
+                        {"type": "text", "text": hora}                # {{5}}
                     ]
                 }
             ]
@@ -55,12 +56,13 @@ def enviar_alerta_staff(trabajador, cliente, telefono_cliente, servicio, fecha, 
     }
     
     try:
-        requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=data)
+        print(f"Alerta enviada a {trabajador} ({numero_limpio}): {response.status_code}")
     except Exception as e:
         print(f"Error alertando al staff: {e}")
 
-def enviar_confirmacion_cliente(telefono, cliente, servicio, fecha, hora):
-    """Envía la plantilla de prueba predeterminada de Meta para verificar la conexión"""
+def enviar_confirmacion_cliente(telefono, cliente, servicio, fecha, hora, barbero):
+    """Envía la plantilla 'confirmacion_oficial' al cliente"""
     url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
     numero_limpio = str(telefono).replace('+', '').replace(' ', '')
     headers = {
@@ -68,22 +70,40 @@ def enviar_confirmacion_cliente(telefono, cliente, servicio, fecha, hora):
         "Content-Type": "application/json"
     }
     
-    # Usamos "hello_world" que no requiere variables y está siempre aprobada
+    # Define el nombre de la empresa según con quién reservó
+    if barbero in ["Camila", "Valentina"]:
+        nombre_empresa = "Guara's Studio VIP"
+    else:
+        nombre_empresa = "Guaro's Barbershop"
+    
     data = {
         "messaging_product": "whatsapp",
         "to": numero_limpio,
         "type": "template",
         "template": {
-            "name": "hello_world",
-            "language": { "code": "en_US" }
+            "name": "confirmacion_oficial", 
+            "language": { "code": "es" },   # En tu imagen dice "Spanish" para confirmacion_oficial
+            "components": [
+                {
+                    "type": "body",
+                    "parameters": [
+                        {"type": "text", "text": cliente},         # {{1}} Nombre del cliente
+                        {"type": "text", "text": nombre_empresa},  # {{2}} Nombre de la empresa
+                        {"type": "text", "text": servicio},        # {{3}} Servicio
+                        {"type": "text", "text": fecha},           # {{4}} Fecha
+                        {"type": "text", "text": hora}             # {{5}} Hora
+                    ]
+                }
+            ]
         }
     }
     
     try:
         response = requests.post(url, headers=headers, json=data)
-        print(f"Respuesta enviando prueba hello_world: {response.status_code} - {response.text}")
+        print(f"Confirmación enviada al cliente ({numero_limpio}): {response.status_code}")
     except Exception as e:
         print(f"Error enviando confirmación al cliente: {e}")
+
 # ==========================================
 # CONFIGURACIÓN DEL SERVIDOR FLASK
 # ==========================================
@@ -110,13 +130,8 @@ def init_db():
     conn.commit()
     conn.close()
 
-# ======= EL CAMBIO ESTÁ AQUÍ =======
-# Llamamos a la función directamente en el archivo principal 
-# para que Render cree la base de datos sí o sí.
+# Asegurar que la BD se cree al iniciar
 init_db()
-
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
 
 def limpiar_historial():
     hoy = datetime.now().strftime('%Y-%m-%d')
@@ -154,7 +169,7 @@ def agendar():
     conn.commit()
     conn.close()
     
-    # Disparar alertas (Asegurarse de mandar el 'barbero' a la de confirmación para el nombre de empresa)
+    # Enviar WhatsApp al staff y al cliente
     enviar_alerta_staff(datos['barbero'], datos['cliente'], datos['telefono'], datos['servicio'], datos['fecha'], datos['hora'])
     enviar_confirmacion_cliente(datos['telefono'], datos['cliente'], datos['servicio'], datos['fecha'], datos['hora'], datos['barbero'])
     
@@ -183,5 +198,4 @@ def obtener_citas():
     return jsonify(citas)
 
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True, port=5000)
