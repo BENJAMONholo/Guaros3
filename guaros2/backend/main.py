@@ -100,7 +100,7 @@ def enviar_confirmacion_cliente(telefono, cliente, servicio, fecha, hora, barber
     
     try:
         response = requests.post(url, headers=headers, json=data)
-        print(f"Confirmación enviada al cliente ({numero_limpio}): {response.status_code}")
+        print(f"Confirmación enviada al cliente ({numero_limpio}): {response.status_code} - {response.text}")
     except Exception as e:
         print(f"Error enviando confirmación al cliente: {e}")
 
