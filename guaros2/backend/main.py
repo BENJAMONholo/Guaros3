@@ -57,7 +57,7 @@ def enviar_alerta_staff(trabajador, cliente, telefono_cliente, servicio, fecha, 
     
     try:
         response = requests.post(url, headers=headers, json=data)
-        print(f"Alerta enviada a {trabajador} ({numero_limpio}): {response.status_code}")
+        print(f"Alerta enviada a {trabajador}: {response.status_code} - {response.text}")
     except Exception as e:
         print(f"Error alertando al staff: {e}")
 
